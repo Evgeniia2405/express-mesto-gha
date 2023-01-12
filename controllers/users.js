@@ -1,9 +1,9 @@
 const User = require('../models/user');
-const { INCORRECT_DATA_ERROR_CODE, DATA_NOT_FOUND_ERROR_CODE, DEFAULT_ERROR_CODE } = require('../app');
+const { INCORRECT_DATA_ERROR_CODE, DATA_NOT_FOUND_ERROR_CODE, DEFAULT_ERROR_CODE } = require('../utils/errorCode');
 
 const getUsers = (req, res) => {
   User.find({})
-    .then((users) => (res.status(200).send(users)))
+    .then((users) => (res.send(users)))
     .catch(() => res.status(DEFAULT_ERROR_CODE).send({ message: 'Ошибка по умолчанию' }));
 };
 
@@ -13,12 +13,9 @@ const getUserById = (req, res) => {
       if (!user) {
         return res.status(DATA_NOT_FOUND_ERROR_CODE).send({ message: 'Пользователь с указанным _id не найден' });
       }
-      return res.status(200).send(user);
+      return res.send(user);
     })
     .catch((err) => {
-      if (err.name === 'ValidationError') {
-        return res.status(INCORRECT_DATA_ERROR_CODE).send({ message: 'Переданы некорректные данные пользователя' });
-      }
       if (err.name === 'CastError') {
         return res.status(INCORRECT_DATA_ERROR_CODE).send({ message: 'Переданы некорректные данные пользователя' });
       }
@@ -31,7 +28,7 @@ const createUser = (req, res) => {
 
   User.create({ name, about, avatar })
     .then((user) => {
-      res.status(200).send(user);
+      res.send(user);
     })
     .catch((err) => {
       if (err.name === 'ValidationError') {
@@ -52,14 +49,19 @@ const editUserInfo = (req, res) => {
       runValidators: true, // данные будут валидированы перед изменением
     },
   )
-    .then((user) => (res.status(200).send(user)))
+    .then((user) => {
+      if (!user) {
+        return res.status(DATA_NOT_FOUND_ERROR_CODE).send({ message: 'Пользователь с указанным _id не найден' });
+      }
+      return res.send(user);
+    })
     .catch((err) => {
       if (err.name === 'ValidationError') {
         return res.status(INCORRECT_DATA_ERROR_CODE).send({ message: 'Переданы некорректные данные при обновлении профиля' });
       }
       if (err.name === 'CastError') {
         return res
-          .status(DATA_NOT_FOUND_ERROR_CODE).send({ message: 'Пользователь с указанным _id не найден' });
+          .status(INCORRECT_DATA_ERROR_CODE).send({ message: 'Переданы некорректные данные при обновлении профиля' });
       }
       return res.status(DEFAULT_ERROR_CODE).send({ message: 'Ошибка по умолчанию' });
     });
@@ -76,14 +78,19 @@ const editUserAvatar = (req, res) => {
       runValidators: true, // данные будут валидированы перед изменением
     },
   )
-    .then((user) => (res.status(200).send(user)))
+    .then((user) => {
+      if (!user) {
+        return res.status(DATA_NOT_FOUND_ERROR_CODE).send({ message: 'Пользователь с указанным _id не найден' });
+      }
+      return res.send(user);
+    })
     .catch((err) => {
       if (err.name === 'ValidationError') {
         return res.status(INCORRECT_DATA_ERROR_CODE).send({ message: 'Переданы некорректные данные при обновлении аватара' });
       }
       if (err.name === 'CastError') {
         return res
-          .status(DATA_NOT_FOUND_ERROR_CODE).send({ message: 'Пользователь с указанным _id не найден' });
+          .status(INCORRECT_DATA_ERROR_CODE).send({ message: 'Переданы некорректные данные при обновлении аватара' });
       }
       return res.status(DEFAULT_ERROR_CODE).send({ message: 'Ошибка по умолчанию' });
     });

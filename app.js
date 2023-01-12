@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
 const rateLimit = require('express-rate-limit');
 const helmet = require('helmet');
+const { DATA_NOT_FOUND_ERROR_CODE } = require('./utils/errorCode');
 
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -10,16 +11,6 @@ const limiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
 });
-
-const INCORRECT_DATA_ERROR_CODE = 400;
-const DATA_NOT_FOUND_ERROR_CODE = 404;
-const DEFAULT_ERROR_CODE = 500;
-
-module.exports = {
-  INCORRECT_DATA_ERROR_CODE,
-  DATA_NOT_FOUND_ERROR_CODE,
-  DEFAULT_ERROR_CODE,
-};
 
 const { PORT = 3000 } = process.env;
 const app = express();
