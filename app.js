@@ -51,7 +51,7 @@ app.use((req, res, next) => {
 app.use('/', usersRouter);
 app.use('/', cardsRouter);
 app.use((req, res) => {
-  res.status(DATA_NOT_FOUND_ERROR_CODE).send({ message: '404. Такой страницы не существует.' });
+  res.status(DATA_NOT_FOUND_ERROR_CODE).send({ message: 'Ошибка 404: несуществующая страница' });
 });
 
 app.listen(PORT, () => {
