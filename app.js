@@ -11,6 +11,16 @@ const limiter = rateLimit({
   legacyHeaders: false,
 });
 
+const INCORRECT_DATA_ERROR_CODE = 400;
+const DATA_NOT_FOUND_ERROR_CODE = 404;
+const DEFAULT_ERROR_CODE = 500;
+
+module.exports = {
+  INCORRECT_DATA_ERROR_CODE,
+  DATA_NOT_FOUND_ERROR_CODE,
+  DEFAULT_ERROR_CODE,
+};
+
 const { PORT = 3000 } = process.env;
 const app = express();
 // const path = require('path');
