@@ -50,6 +50,9 @@ app.use((req, res, next) => {
 
 app.use('/', usersRouter);
 app.use('/', cardsRouter);
+app.use((req, res) => {
+  res.status(DATA_NOT_FOUND_ERROR_CODE).send({ message: '404. Такой страницы не существует.' });
+});
 
 app.listen(PORT, () => {
   // Если всё работает, консоль покажет, какой порт приложение слушает
