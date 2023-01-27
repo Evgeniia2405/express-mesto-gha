@@ -1,6 +1,7 @@
 const express = require('express');
 const dotenv = require('dotenv');
 const mongoose = require('mongoose');
+const { errors } = require('celebrate');
 const bodyParser = require('body-parser');
 const rateLimit = require('express-rate-limit');
 const helmet = require('helmet');
@@ -41,6 +42,8 @@ app.use('/', cardsRouter);
 app.use('*', (req, res, next) => {
   next(new NotFoundError('Ошибка 404: несуществующая страница'));
 });
+
+app.use(errors()); // обработчик ошибок celebrate
 
 app.use(centralErrorHandler);
 
