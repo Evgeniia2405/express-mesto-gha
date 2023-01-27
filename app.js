@@ -1,9 +1,11 @@
 const express = require('express');
+const dotenv = require('dotenv');
 const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
 const rateLimit = require('express-rate-limit');
 const helmet = require('helmet');
-const { DATA_NOT_FOUND_ERROR_CODE } = require('./utils/errorCode');
+const centralErrorHandler = require('./middlewares/centralErrorHandler');
+const NotFoundError = require('./errors/not-found-err');
 
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -11,11 +13,16 @@ const limiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
 });
+dotenv.config();
+const {
+  PORT = 3000,
+  MONGO_URL = 'mongodb://localhost:27017/mestodb',
+} = process.env;
 
-const { PORT = 3000 } = process.env;
+// const { PORT = 3000 } = process.env;
 const app = express();
 // const path = require('path');
-
+const authRouter = require('./routes/auth');
 const usersRouter = require('./routes/users');
 const cardsRouter = require('./routes/cards');
 
@@ -25,27 +32,23 @@ app.use(helmet());
 app.use(limiter);
 
 mongoose.set('strictQuery', false);
-mongoose.connect('mongodb://localhost:27017/mestodb');
-
-const userId = {
-  _id: '63bffb2e5c1e251375b979ea',
-};
+// mongoose.connect('mongodb://localhost:27017/mestodb');
 
 // app.use(express.static(path.join(__dirname, 'public')));
-
-app.use((req, res, next) => {
-  req.user = userId;
-
-  next();
-});
-
+app.use('/', authRouter);
 app.use('/', usersRouter);
 app.use('/', cardsRouter);
-app.use((req, res) => {
-  res.status(DATA_NOT_FOUND_ERROR_CODE).send({ message: 'Ошибка 404: несуществующая страница' });
+app.use('*', (req, res, next) => {
+  next(new NotFoundError('Ошибка 404: несуществующая страница'));
 });
 
-app.listen(PORT, () => {
-  // Если всё работает, консоль покажет, какой порт приложение слушает
-  console.log(`App listening on port ${PORT}`);
-});
+app.use(centralErrorHandler);
+
+async function connect() {
+  await mongoose.connect(MONGO_URL, {});
+  console.log(`Server connect db ${MONGO_URL}`);
+  await app.listen(PORT);
+  console.log(`Server listen port ${PORT}`);
+}
+
+connect();

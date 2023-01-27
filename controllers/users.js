@@ -1,46 +1,101 @@
+const bcrypt = require('bcrypt'); // импортируем bcrypt
 const User = require('../models/user');
-const { INCORRECT_DATA_ERROR_CODE, DATA_NOT_FOUND_ERROR_CODE, DEFAULT_ERROR_CODE } = require('../utils/errorCode');
 
-const getUsers = async (req, res) => {
+const { generateToken } = require('../utils/jwt');
+
+const ConflictError = require('../errors/conflict-err');
+const IncorrectError = require('../errors/incorrect-err');
+const UnauthorizedError = require('../errors/unauthorized-err');
+const NotFoundError = require('../errors/not-found-err');
+const {
+  SOLT_ROUNDS,
+} = require('../utils/constants');
+
+const {
+  MONGO_DUPLICATE_ERROR_CODE,
+} = require('../utils/errorCode');
+
+const getUsers = async (req, res, next) => {
   try {
     const users = await User.find({});
     res.send(users);
-  } catch {
-    res.status(DEFAULT_ERROR_CODE).send({ message: 'Ошибка по умолчанию' });
+  } catch (err) {
+    next(err);
   }
 };
 
-const getUserById = async (req, res) => {
+const getUserMe = async (req, res, next) => {
   try {
-    const user = await User.findById(req.params.userId);
-    if (!user) throw res.status(DATA_NOT_FOUND_ERROR_CODE).send({ message: 'Пользователь с указанным _id не найден' });
+    const user = await User.findById(req.user._id);
+    if (!user) throw new NotFoundError('Пользователь с указанным _id не найден');
     res.send(user);
   } catch (err) {
     if (err.name === 'CastError') {
-      res.status(INCORRECT_DATA_ERROR_CODE).send({ message: 'Переданы некорректные данные пользователя' });
-    } else if (err.message === 'not found') {
-      res.status(DATA_NOT_FOUND_ERROR_CODE).send({ message: 'Пользователь с указанным id не найден' });
-    } else {
-      res.status(DEFAULT_ERROR_CODE).send({ message: 'Ошибка по умолчанию' });
+      next(new IncorrectError('Переданы некорректные данные пользователя'));
     }
+    if (err.message === 'not found') {
+      next(new NotFoundError('Пользователь с указанным _id не найден'));
+    }
+    next(err);
   }
 };
 
-const createUser = async (req, res) => {
+const createUser = async (req, res, next) => {
   try {
-    const { name, about, avatar } = req.body;
-    const user = await User.create({ name, about, avatar });
-    res.send(user);
+    const {
+      name,
+      about,
+      avatar,
+      email,
+      password,
+    } = req.body;
+    const hash = await bcrypt.hash(password, SOLT_ROUNDS);
+    const userNew = await User.create({
+      name,
+      about,
+      avatar,
+      email,
+      password: hash,
+    });
+    res.send({
+      name: userNew.name,
+      about: userNew.about,
+      avatar: userNew.avatar,
+      email: userNew.email,
+      id: userNew._id,
+    });
   } catch (err) {
     if (err.name === 'ValidationError') {
-      res.status(INCORRECT_DATA_ERROR_CODE).send({ message: 'Переданы некорректные данные при создании пользователя.' });
-    } else {
-      res.status(DEFAULT_ERROR_CODE).send({ message: 'Ошибка по умолчанию' });
+      next(new IncorrectError('Переданы некорректные данные при создании пользователя'));
     }
+    if (err.code === MONGO_DUPLICATE_ERROR_CODE) {
+      next(new ConflictError('Такой пользователь уже существует'));
+    }
+    next(err);
   }
 };
 
-const editUserInfo = async (req, res) => {
+const login = async (req, res, next) => {
+  const { email, password } = req.body;
+  try {
+    const user = await User.findOne({ email }).select('+password');
+    if (!user) {
+      throw new UnauthorizedError('Неправильные почта или пароль');
+    }
+    const matched = await bcrypt.compare(password, user.password);
+    if (!matched) {
+      // хеши не совпали — отклоняем промис
+      throw new UnauthorizedError('Неправильные почта или пароль');
+    }
+    // аутентификация успешна
+    const token = generateToken({ _id: user._id });
+    res.send({ message: 'Всё верно!', token });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const editUserInfo = async (req, res, next) => {
   try {
     const { name, about } = req.body;
     const user = await User.findByIdAndUpdate(
@@ -51,20 +106,20 @@ const editUserInfo = async (req, res) => {
         runValidators: true, // данные будут валидированы перед изменением
       },
     );
-    if (!user) throw res.status(DATA_NOT_FOUND_ERROR_CODE).send({ message: 'Пользователь с указанным _id не найден' });
+    if (!user) throw new NotFoundError('Пользователь с указанным _id не найден');
     res.send(user);
   } catch (err) {
     if (err.name === 'ValidationError') {
-      res.status(INCORRECT_DATA_ERROR_CODE).send({ message: 'Переданы некорректные данные при обновлении профиля' });
-    } else if (err.name === 'CastError') {
-      res.status(INCORRECT_DATA_ERROR_CODE).send({ message: 'Переданы некорректные данные при обновлении профиля' });
-    } else {
-      res.status(DEFAULT_ERROR_CODE).send({ message: 'Ошибка по умолчанию' });
+      next(new IncorrectError('Переданы некорректные данные при обновлении профиля'));
     }
+    if (err.name === 'CastError') {
+      next(new IncorrectError('Переданы некорректные данные при обновлении профиля'));
+    }
+    next(err);
   }
 };
 
-const editUserAvatar = async (req, res) => {
+const editUserAvatar = async (req, res, next) => {
   try {
     const { avatar } = req.body;
     const user = await User.findByIdAndUpdate(
@@ -75,23 +130,24 @@ const editUserAvatar = async (req, res) => {
         runValidators: true, // данные будут валидированы перед изменением
       },
     );
-    if (!user) throw res.status(DATA_NOT_FOUND_ERROR_CODE).send({ message: 'Пользователь с указанным _id не найден' });
+    if (!user) throw new NotFoundError('Пользователь с указанным _id не найден');
     res.send(user);
   } catch (err) {
     if (err.name === 'ValidationError') {
-      res.status(INCORRECT_DATA_ERROR_CODE).send({ message: 'Переданы некорректные данные при обновлении аватара' });
-    } else if (err.name === 'CastError') {
-      res.status(INCORRECT_DATA_ERROR_CODE).send({ message: 'Переданы некорректные данные при обновлении аватара' });
-    } else {
-      res.status(DEFAULT_ERROR_CODE).send({ message: 'Ошибка по умолчанию' });
+      next(new IncorrectError('Переданы некорректные данные при обновлении аватара'));
     }
+    if (err.name === 'CastError') {
+      next(new IncorrectError('Переданы некорректные данные при обновлении аватара'));
+    }
+    next(err);
   }
 };
 
 module.exports = {
   getUsers,
-  getUserById,
+  getUserMe,
   createUser,
+  login,
   editUserInfo,
   editUserAvatar,
 };
