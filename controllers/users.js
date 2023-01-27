@@ -24,6 +24,22 @@ const getUsers = async (req, res, next) => {
   }
 };
 
+const getUserById = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.params.userId);
+    if (!user) throw new NotFoundError('Пользователь с указанным _id не найден');
+    res.send(user);
+  } catch (err) {
+    if (err.name === 'CastError') {
+      next(new IncorrectError('Переданы некорректные данные пользователя'));
+    }
+    if (err.message === 'not found') {
+      next(new NotFoundError('Пользователь с указанным _id не найден'));
+    }
+    next(err);
+  }
+};
+
 const getUserMe = async (req, res, next) => {
   try {
     const user = await User.findById(req.user._id);
@@ -145,6 +161,7 @@ const editUserAvatar = async (req, res, next) => {
 
 module.exports = {
   getUsers,
+  getUserById,
   getUserMe,
   createUser,
   login,

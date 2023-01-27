@@ -5,30 +5,18 @@ const auth = require('../middlewares/auth');
 const {
   getUsers,
   getUserMe,
-  // createUser,
-  // login,
+  getUserById,
   editUserInfo,
   editUserAvatar,
 } = require('../controllers/users');
 
-// router.post('/signup', celebrate({
-//   body: Joi.object().keys({
-//     name: Joi.string().min(2).max(30),
-//     about: Joi.string().min(2).max(30),
-//     avatar: Joi.string(),
-//     email: Joi.string().required().email(),
-//     password: Joi.string().required().min(8),
-//   }),
-// }), createUser);
-// router.post('/signin', celebrate({
-//   body: Joi.object().keys({
-//     email: Joi.string().required().email(),
-//     password: Joi.string().required().min(8),
-//   }),
-// }), login);
 router.get('/users', auth, getUsers);
 router.get('/users/me', auth, getUserMe);
-// router.get('/users/:userId', auth, getUserById);
+router.get('/users/:userId', celebrate({
+  params: Joi.object().keys({
+    userId: Joi.string().length(24).hex().required(),
+  }),
+}), auth, getUserById);
 
 router.patch('/users/me', auth, celebrate({
   body: Joi.object().keys({
