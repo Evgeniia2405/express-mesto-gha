@@ -6,6 +6,7 @@ const bodyParser = require('body-parser');
 const rateLimit = require('express-rate-limit');
 const helmet = require('helmet');
 const centralErrorHandler = require('./middlewares/centralErrorHandler');
+const { requestLogger, errorLogger } = require('./middlewares/logger');
 const NotFoundError = require('./errors/not-found-err');
 
 const limiter = rateLimit({
@@ -23,6 +24,8 @@ const {
 // const { PORT = 3000 } = process.env;
 const app = express();
 // const path = require('path');
+app.use(requestLogger); // подключаем логгер запросов
+
 const authRouter = require('./routes/auth');
 const usersRouter = require('./routes/users');
 const cardsRouter = require('./routes/cards');
@@ -43,6 +46,7 @@ app.use('*', (req, res, next) => {
   next(new NotFoundError('Ошибка 404: несуществующая страница'));
 });
 
+app.use(errorLogger); // подключаем логгер ошибок
 app.use(errors()); // обработчик ошибок celebrate
 
 app.use(centralErrorHandler);
