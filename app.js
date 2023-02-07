@@ -7,7 +7,7 @@ const rateLimit = require('express-rate-limit');
 const helmet = require('helmet');
 const centralErrorHandler = require('./middlewares/centralErrorHandler');
 const { requestLogger, errorLogger } = require('./middlewares/logger');
-const cors = require('./middlewares/cors');
+const { cors } = require('./middlewares/cors');
 const NotFoundError = require('./errors/not-found-err');
 
 const limiter = rateLimit({
