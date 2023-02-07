@@ -5,6 +5,7 @@ const { errors } = require('celebrate');
 const bodyParser = require('body-parser');
 const rateLimit = require('express-rate-limit');
 const helmet = require('helmet');
+const cors = require('cors');
 const centralErrorHandler = require('./middlewares/centralErrorHandler');
 const { requestLogger, errorLogger } = require('./middlewares/logger');
 const NotFoundError = require('./errors/not-found-err');
@@ -16,14 +17,15 @@ const limiter = rateLimit({
   legacyHeaders: false,
 });
 dotenv.config();
+
+const app = express();
 const {
   PORT = 3000,
   MONGO_URL = 'mongodb://localhost:27017/mestodb',
 } = process.env;
 
-// const { PORT = 3000 } = process.env;
-const app = express();
-// const path = require('path');
+app.use(cors());
+
 app.use(requestLogger); // подключаем логгер запросов
 
 const authRouter = require('./routes/auth');
