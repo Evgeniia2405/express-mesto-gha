@@ -5,7 +5,7 @@ const NotFoundError = require('../errors/not-found-err');
 
 const getCards = async (req, res, next) => {
   try {
-    const cards = await Card.find({}).populate('owner');
+    const cards = await Card.find({}).populate('owner likes');
     res.send(cards);
   } catch (err) {
     next(err);
@@ -15,7 +15,7 @@ const getCards = async (req, res, next) => {
 const createCard = async (req, res, next) => {
   try {
     const { name, link } = req.body;
-    const card = await Card.create({ name, link, owner: req.user._id });
+    const card = await Card.create({ name, link, owner: req.user._id }).populate('owner likes');
     res.send(card);
   } catch (err) {
     if (err.name === 'ValidationError') {
@@ -27,7 +27,7 @@ const createCard = async (req, res, next) => {
 
 const deleteCard = async (req, res, next) => {
   try {
-    const card = await Card.findById(req.params.cardId);
+    const card = await Card.findById(req.params.cardId).populate('owner likes');
     if (!card) throw new NotFoundError('Карточка с указанным _id не найдена');
     if (card.owner._id.toString() !== req.user._id) throw new ForbiddenError('Это карточка другого пользователя, вы не можете ее удалить');
     await card.delete();
@@ -46,7 +46,7 @@ const addLikeCard = async (req, res, next) => {
       req.params.cardId,
       { $addToSet: { likes: req.user._id } }, // добавить _id в массив, если его там нет
       { new: true },
-    );
+    ).populate('owner likes');
     if (!card) throw new NotFoundError('Передан несуществующий _id карточки');
     res.send(card);
   } catch (err) {
@@ -63,7 +63,7 @@ const removeLikeCard = async (req, res, next) => {
       req.params.cardId,
       { $pull: { likes: req.user._id } }, // убрать _id из массива
       { new: true },
-    );
+    ).populate('owner likes');
     if (!card) throw new NotFoundError('Карточка с указанным _id не найдена');
     res.send(card);
   } catch (err) {
