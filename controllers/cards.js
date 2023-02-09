@@ -15,7 +15,7 @@ const getCards = async (req, res, next) => {
 const createCard = async (req, res, next) => {
   try {
     const { name, link } = req.body;
-    const card = await Card.create({ name, link, owner: req.user._id }).populate('owner');
+    const card = await Card.create({ name, link, owner: req.user._id });
     res.send(card);
   } catch (err) {
     if (err.name === 'ValidationError') {
@@ -46,7 +46,7 @@ const addLikeCard = async (req, res, next) => {
       req.params.cardId,
       { $addToSet: { likes: req.user._id } }, // добавить _id в массив, если его там нет
       { new: true },
-    ).populate('owner likes');
+    );
     if (!card) throw new NotFoundError('Передан несуществующий _id карточки');
     res.send(card);
   } catch (err) {
@@ -63,7 +63,7 @@ const removeLikeCard = async (req, res, next) => {
       req.params.cardId,
       { $pull: { likes: req.user._id } }, // убрать _id из массива
       { new: true },
-    ).populate('owner likes');
+    );
     if (!card) throw new NotFoundError('Карточка с указанным _id не найдена');
     res.send(card);
   } catch (err) {
