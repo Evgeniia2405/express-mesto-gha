@@ -15,7 +15,7 @@ const getCards = async (req, res, next) => {
 const createCard = async (req, res, next) => {
   try {
     const { name, link } = req.body;
-    const card = await Card.create({ name, link, owner: req.user._id }).populate('owner likes');
+    const card = await Card.create({ name, link, owner: req.user._id }).populate('owner');
     res.send(card);
   } catch (err) {
     if (err.name === 'ValidationError') {
@@ -27,7 +27,7 @@ const createCard = async (req, res, next) => {
 
 const deleteCard = async (req, res, next) => {
   try {
-    const card = await Card.findById(req.params.cardId).populate('owner likes');
+    const card = await Card.findById(req.params.cardId);
     if (!card) throw new NotFoundError('Карточка с указанным _id не найдена');
     if (card.owner._id.toString() !== req.user._id) throw new ForbiddenError('Это карточка другого пользователя, вы не можете ее удалить');
     await card.delete();
