@@ -9,10 +9,6 @@ const centralErrorHandler = require('./middlewares/centralErrorHandler');
 const { requestLogger, errorLogger } = require('./middlewares/logger');
 const { cors } = require('./middlewares/cors');
 const NotFoundError = require('./errors/not-found-err');
-const authRouter = require('./routes/auth');
-const usersRouter = require('./routes/users');
-const cardsRouter = require('./routes/cards');
-const auth = require('./middlewares/auth');
 
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -27,6 +23,10 @@ const {
   PORT = 3000,
   MONGO_URL = 'mongodb://localhost:27017/mestodb',
 } = process.env;
+const authRouter = require('./routes/auth');
+const usersRouter = require('./routes/users');
+const cardsRouter = require('./routes/cards');
+const auth = require('./middlewares/auth');
 
 app.use(cors);
 
