@@ -15,7 +15,7 @@ const getCards = async (req, res, next) => {
 const createCard = async (req, res, next) => {
   try {
     const { name, link } = req.body;
-    const card = await Card.create({ name, link, owner: req.user._id });
+    const card = await Card.create({ name, link, owner: req.user._id }).populate('owner likes');
     res.send(card);
   } catch (err) {
     if (err.name === 'ValidationError') {
